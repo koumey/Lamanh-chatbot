@@ -1,12 +1,13 @@
 {
   "name": "lamanh-chatbot",
   "version": "1.0.0",
+  "description": "Chatbot cho Lâm Anh Vinhomes",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
     "axios": "^1.3.4"
   }
 }
