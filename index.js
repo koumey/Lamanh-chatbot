@@ -3,7 +3,7 @@ const axios = require('axios');
 const app = express();
 
 const VERIFY_TOKEN = 'lamanh_vinhomes_2025';
-const PAGE_ACCESS_TOKEN = 'EAAOWyvZAX72gBOzC8U...'; // dán token thật của anh tại đây
+const PAGE_ACCESS_TOKEN = 'EAAOWyvZAX72gBOzC8UR4TULvHTNDGu1NWQ8RF9nzn4GFKcnGZAI0jn4TYXlki8TiRko1nEPSQKULlHq8QmkmgpdINsEl6Y4P0mUEZCQLiOKC0ERMwv4IIc4F5JxM0xt3Jg7C0rZAJj3zUxYMnp48VwEwDSBp6ZAYe375k8Jzd8KLolwl9pEbtgrZBZCW6oVe8a0UgZDZD'; // dán token thật của anh tại đây
 
 app.use(express.json()); // Dùng để parse body JSON
 
