@@ -3,7 +3,7 @@ const axios = require('axios');
 const app = express();
 
 const VERIFY_TOKEN = 'lamanh_vinhomes_2025';
-const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN || 'EAAB...'; // Thay 'EAAB...' bằng token thực tế nếu cần
+const PAGE_ACCESS_TOKEN = 'EAAOWyvZAX72gBOzC8U...'; // dán token thật của anh tại đây
 
 app.use(express.json()); // Dùng để parse body JSON
 
