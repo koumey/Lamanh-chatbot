@@ -2,39 +2,36 @@ const express = require('express');
 const axios = require('axios');
 require('dotenv').config(); // Đọc biến môi trường từ file .env
 
-const app = express();
-
-const VERIFY_TOKEN = 'lamanh_vinhomes_2025';
-const PAGE_ACCESS_TOKEN = 'EAAOWyvZAX72gBOzC8UR4TULvHTNDGu1NWQ8RF9nzn4GFKcnGZAI0jn4TYXlki8TiRko1nEPSQKULlHq8QmkmgpdINsEl6Y4P0mUEZCQLiOKC0ERMwv4IIc4F5JxM0xt3Jg7C0rZAJj3zUxYMnp48VwEwDSBp6ZAYe375k8Jzd8KLolwl9pEbtgrZBZCW6oVe8a0UgZDZD';
-
-const { Configuration, OpenAIApi } = require('openai');
-const configuration = new Configuration({
+const OpenAI = require('openai');
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
+const app = express();
 app.use(express.json());
 
+const VERIFY_TOKEN = 'lamanh_vinhomes_2025';
+const PAGE_ACCESS_TOKEN = 'EAAOWyvZAX72gBOz...'; // Token của trang
+
+// Route test
 app.get('/', (req, res) => {
-  res.send('Hello, đây là trang chủ của Lâm Anh Chatbot. Truy cập /webhook để kết nối Messenger.');
+  res.send('Lâm Anh Chatbot đã sẵn sàng! Truy cập /webhook để kết nối Messenger.');
 });
 
+// Facebook xác minh Webhook
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  if (mode && token) {
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('WEBHOOK VERIFIED');
-      return res.status(200).send(challenge);
-    } else {
-      return res.sendStatus(403);
-    }
+  if (mode && token && mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('WEBHOOK VERIFIED');
+    return res.status(200).send(challenge);
   }
-  res.sendStatus(400);
+  res.sendStatus(403);
 });
 
+// Xử lý tin nhắn từ Facebook
 app.post('/webhook', (req, res) => {
   const body = req.body;
 
@@ -45,18 +42,20 @@ app.post('/webhook', (req, res) => {
 
       if (webhook_event.message && webhook_event.message.text) {
         const userMessage = webhook_event.message.text;
-        console.log('Khách gửi tin:', userMessage);
+        console.log('Khách:', userMessage);
 
         const reply = await getGPTResponse(userMessage);
         await sendTextMessage(sender_psid, reply);
       }
     });
+
     res.status(200).send('EVENT_RECEIVED');
   } else {
     res.sendStatus(404);
   }
 });
 
+// Gửi lại phản hồi cho khách
 async function sendTextMessage(recipientId, text) {
   try {
     await axios.post(
@@ -66,31 +65,34 @@ async function sendTextMessage(recipientId, text) {
         message: { text: text }
       }
     );
-    console.log('Đã gửi tin nhắn đến PSID:', recipientId);
+    console.log('Đã gửi tin nhắn đến:', recipientId);
   } catch (error) {
-    console.error('Lỗi khi gửi tin nhắn:', error.response ? error.response.data : error.message);
+    console.error('Lỗi gửi tin:', error.response?.data || error.message);
   }
 }
 
+// Gọi OpenAI để sinh nội dung trả lời
 async function getGPTResponse(userMessage) {
   try {
-    const response = await openai.createChatCompletion({
+    const chatCompletion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: 'Bạn là trợ lý bất động sản Lâm Anh, trả lời một cách chuyên nghiệp, lịch sự và thân thiện.' },
+        { role: 'system', content: 'Bạn là trợ lý bất động sản Lâm Anh, nói chuyện chuyên nghiệp, lịch sự và thân thiện.' },
         { role: 'user', content: userMessage }
       ],
       temperature: 0.7,
       max_tokens: 150,
     });
-    return response.data.choices[0].message.content.trim();
+
+    return chatCompletion.choices[0].message.content.trim();
   } catch (error) {
-    console.error('Lỗi khi gọi OpenAI API:', error.response ? error.response.data : error.message);
-    return "Xin lỗi, em đang gặp trục trặc kỹ thuật. Anh vui lòng thử lại sau nhé.";
+    console.error('Lỗi GPT:', error.response?.data || error.message);
+    return "Xin lỗi, em đang gặp chút lỗi kỹ thuật. Anh thử lại giúp em nha.";
   }
 }
 
+// Server khởi chạy
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Lâm Anh Chatbot đang chạy tại cổng ${PORT}`);
 });
