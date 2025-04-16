@@ -69,8 +69,33 @@ async function sendTextMessage(recipientId, text) {
     console.error('Lỗi khi gửi tin nhắn:', error.response ? error.response.data : error);
   }
 }
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+const { Configuration, OpenAIApi } = require('openai');
+
+const configuration = new Configuration({
+  // Lấy API key từ biến môi trường hoặc dán trực tiếp cho test (nhưng nhớ bảo mật cho production)
+  apiKey: process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY_HERE',
+});
+const openai = new OpenAIApi(configuration);
+
+// Sau đó anh có thể gọi API, ví dụ:
+async function getGPTResponse(userMessage) {
+  try {
+    const response = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'Bạn là trợ lý bất động sản Lâm Anh, trả lời một cách chuyên nghiệp, lịch sự và thân thiện.' },
+        { role: 'user', content: userMessage }
+      ],
+      temperature: 0.7,
+      max_tokens: 150,
+    });
+    return response.data.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Lỗi khi gọi OpenAI API:', error.response ? error.response.data : error);
+    return "Xin lỗi, em gặp trục trặc tư vấn. Anh vui lòng chờ giây lát.";
+  }
+}
