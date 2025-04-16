@@ -1,27 +1,24 @@
 const express = require('express');
 const axios = require('axios');
-const { Configuration, OpenAIApi } = require('openai');
+require('dotenv').config(); // Đọc biến môi trường từ file .env
 
 const app = express();
-app.use(express.json());
 
-// Token xác minh và gửi tin nhắn Facebook (dán trực tiếp)
 const VERIFY_TOKEN = 'lamanh_vinhomes_2025';
 const PAGE_ACCESS_TOKEN = 'EAAOWyvZAX72gBOzC8UR4TULvHTNDGu1NWQ8RF9nzn4GFKcnGZAI0jn4TYXlki8TiRko1nEPSQKULlHq8QmkmgpdINsEl6Y4P0mUEZCQLiOKC0ERMwv4IIc4F5JxM0xt3Jg7C0rZAJj3zUxYMnp48VwEwDSBp6ZAYe375k8Jzd8KLolwl9pEbtgrZBZCW6oVe8a0UgZDZD';
-const OPENAI_API_KEY = 'sk-abc123...'; // Dán key OpenAI thật vào đây
 
-// Cấu hình OpenAI
+const { Configuration, OpenAIApi } = require('openai');
 const configuration = new Configuration({
-  apiKey: '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',
+  apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-// Kiểm tra kết nối server
+app.use(express.json());
+
 app.get('/', (req, res) => {
-  res.send('Hello, đây là Lâm Anh Chatbot! Truy cập /webhook để kết nối với Messenger.');
+  res.send('Hello, đây là trang chủ của Lâm Anh Chatbot. Truy cập /webhook để kết nối Messenger.');
 });
 
-// Xác minh webhook từ Facebook
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -29,7 +26,7 @@ app.get('/webhook', (req, res) => {
 
   if (mode && token) {
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('Webhook xác minh thành công!');
+      console.log('WEBHOOK VERIFIED');
       return res.status(200).send(challenge);
     } else {
       return res.sendStatus(403);
@@ -38,7 +35,6 @@ app.get('/webhook', (req, res) => {
   res.sendStatus(400);
 });
 
-// Nhận tin nhắn từ người dùng
 app.post('/webhook', (req, res) => {
   const body = req.body;
 
@@ -49,20 +45,18 @@ app.post('/webhook', (req, res) => {
 
       if (webhook_event.message && webhook_event.message.text) {
         const userMessage = webhook_event.message.text;
-        console.log('Khách nói:', userMessage);
+        console.log('Khách gửi tin:', userMessage);
 
         const reply = await getGPTResponse(userMessage);
         await sendTextMessage(sender_psid, reply);
       }
     });
-
     res.status(200).send('EVENT_RECEIVED');
   } else {
     res.sendStatus(404);
   }
 });
 
-// Gửi tin nhắn về cho khách hàng
 async function sendTextMessage(recipientId, text) {
   try {
     await axios.post(
@@ -72,35 +66,27 @@ async function sendTextMessage(recipientId, text) {
         message: { text: text }
       }
     );
-    console.log('Đã gửi:', text);
+    console.log('Đã gửi tin nhắn đến PSID:', recipientId);
   } catch (error) {
-    console.error('Lỗi gửi tin nhắn:', error.response?.data || error.message);
+    console.error('Lỗi khi gửi tin nhắn:', error.response ? error.response.data : error.message);
   }
 }
 
-// Gọi GPT để tạo phản hồi
 async function getGPTResponse(userMessage) {
   try {
     const response = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
-        {
-          role: 'system',
-          content: 'Bạn là trợ lý bất động sản tên Lâm Anh. Hãy trả lời khách hàng một cách chuyên nghiệp, thân thiện, ngắn gọn và đúng trọng tâm.'
-        },
-        {
-          role: 'user',
-          content: userMessage
-        }
+        { role: 'system', content: 'Bạn là trợ lý bất động sản Lâm Anh, trả lời một cách chuyên nghiệp, lịch sự và thân thiện.' },
+        { role: 'user', content: userMessage }
       ],
       temperature: 0.7,
-      max_tokens: 200
+      max_tokens: 150,
     });
-
     return response.data.choices[0].message.content.trim();
   } catch (error) {
-    console.error('Lỗi gọi OpenAI:', error.response?.data || error.message);
-    return 'Xin lỗi anh, em đang gặp chút trục trặc kỹ thuật. Anh chờ em một xíu nhé!';
+    console.error('Lỗi khi gọi OpenAI API:', error.response ? error.response.data : error.message);
+    return "Xin lỗi, em đang gặp trục trặc kỹ thuật. Anh vui lòng thử lại sau nhé.";
   }
 }
 
